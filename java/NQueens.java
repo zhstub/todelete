@@ -14,7 +14,7 @@ public class NQueens {
 		System.out.println(BigInteger.ONE.not().and(BigInteger.valueOf(255)));
 
 		testAllSolutions(8);
-		testOneSolutions(8, 14);
+		testOneSolutions(1, 14);
 	}
 
 
@@ -70,6 +70,38 @@ public class NQueens {
 		int[] chess = new int[num];
 
 		return placeQueenAtRow(chess, 0);
+	}
+
+
+	public static long getAllSolutionsWithoutRecursion(int num) {
+		int[] chess = new int[num];
+		int count = 0;
+		int row = 0;
+		int col = 0;
+
+		while (row < num) {
+			while (col < num){
+				if (isSafe(chess, row, col)) {
+					chess[row++] = col;
+					col = 0;
+				} else {
+					col++;
+				}
+			}
+
+			if (row >= num) {
+				count++;
+			}
+
+			row--;
+			if (row < 0) {
+				return count;
+			} else {
+				col = chess[row] + 1;
+			}
+		}
+
+		return count;
 	}
 
 
@@ -185,7 +217,7 @@ public class NQueens {
 		for (int num = min; num <= max; num++) {
 			long then = System.currentTimeMillis();
 
-			long count = getAllSolutionsWithBitOp(num);
+			long count = getAllSolutionsWithoutRecursion(num);
 
 			long now = System.currentTimeMillis();
 
