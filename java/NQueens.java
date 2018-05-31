@@ -13,13 +13,13 @@ public class NQueens {
 		System.out.println(tmp);
 		System.out.println(BigInteger.ONE.not().and(BigInteger.valueOf(255)));
 
-		testAllSolutions(8);
-		testOneSolutions(1, 14);
+		testAllApproaches(8);
+		testOneApproach(8, 14);
 	}
 
 
-	public static long getAllSolutionsWithBitOp(int num) {
-		mask = (1 << num) - 1;
+	public static long countSolutionsWithBitOp(int n) {
+		mask = (1 << n) - 1;
 
 		return checkBits(0, 0, 0);
 	}
@@ -41,8 +41,8 @@ public class NQueens {
 	}
 
 
-	public static long getAllSolutionsWithBigInteger(int num) {
-		maskBigInteger = BigInteger.ONE.shiftLeft(num).subtract(BigInteger.ONE);
+	public static long countSolutionsWithBigInteger(int n) {
+		maskBigInteger = BigInteger.ONE.shiftLeft(n).subtract(BigInteger.ONE);
 
 		return checkBigInteger(BigInteger.valueOf(0), BigInteger.valueOf(0), BigInteger.valueOf(0));
 	}
@@ -66,38 +66,38 @@ public class NQueens {
 	}
 
 
-	public static long getAllSolutions(int num) {
-		int[] chess = new int[num];
+	public static long countSolutions(int n) {
+		int[] board = new int[n];
 
-		return placeQueenAtRow(chess, 0);
+		return placeQueenInRow(board, 0);
 	}
 
 
-	public static long getAllSolutionsWithoutRecursion(int num) {
-		int[] chess = new int[num];
-		int count = 0;
-		int row = 0;
-		int col = 0;
+	// board[x]=y denotes placing a queen in row x and column y
+	private static long placeQueenInRow(int[] board, int row) {
+		if (row == board.length) {
+			return 1;
+		}
 
-		while (row < num) {
-			while (col < num){
-				if (isSafe(chess, row, col)) {
-					chess[row++] = col;
-					col = 0;
+		long count = 0;
+
+		if (row == 0) { // first queen
+			// chessboard is symmetrical
+			for (int i = 0; i < (board.length + 1) / 2; i++) {
+				board[row] = i;
+				long result = placeQueenInRow(board, row + 1);
+				if (board.length % 2 == 1 && i == board.length / 2) {
+					count += result;
 				} else {
-					col++;
+					count += 2 * result;
 				}
 			}
-
-			if (row >= num) {
-				count++;
-			}
-
-			row--;
-			if (row < 0) {
-				return count;
-			} else {
-				col = chess[row] + 1;
+		} else {
+			for (int i = 0; i < board.length; i++) {
+				if (isSafe(board, row, i)) {
+					board[row] = i;
+					count += placeQueenInRow(board, row + 1);
+				}
 			}
 		}
 
@@ -105,16 +105,57 @@ public class NQueens {
 	}
 
 
-	public static long getAllSolutionsWithThreads(int num) {
+	private static boolean isSafe(int[] board, int row, int col) {
+		for (int i = 0; i < row; i++) {
+			if (board[i] == col || board[i] == col - row + i || board[i] == col + row - i) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+
+	public static long countSolutionsWithoutRecursion(int n) {
+		int[] board = new int[n];
+		int count = 0;
+		int row = 0;
+		int col = 0;
+
+		while (true) {
+			while (row < n && col < n){
+				if (isSafe(board, row, col)) {
+					board[row++] = col;
+					col = 0;
+				} else {
+					col++;
+				}
+			}
+
+			if (row >= n) {
+				count++;
+			}
+
+			row--;
+			if (row < 0) {
+				return count;
+			} else {
+				col = board[row] + 1;
+			}
+		}
+	}
+
+
+	public static long countSolutionsWithThreads(int n) {
 		long count = 0;
-		int nThreads = (num + 1) / 2;
+		int nThreads = (n + 1) / 2;
 		ExecutorService pool = Executors.newFixedThreadPool(nThreads);
 		List<Future<Long>> futureList = new ArrayList<>(nThreads);
 
 		for (int i = 0; i < nThreads; i++) {
-			int[] chess = new int[num];
-			chess[0] = i;
-			Callable<Long> c = new NQThread(chess);
+			int[] board = new int[n];
+			board[0] = i;
+			Callable<Long> c = new NQThread(board);
 			futureList.add(pool.submit(c));
 		}
 
@@ -123,7 +164,7 @@ public class NQueens {
 		for (int i = 0; i < nThreads; i++) {
 			try {
 				long result = futureList.get(i).get();
-				if (num % 2 == 1 && i == nThreads - 1) {
+				if (n % 2 == 1 && i == nThreads - 1) {
 					count += result;
 				} else {
 					count += 2 * result;
@@ -137,71 +178,28 @@ public class NQueens {
 	}
 
 
-	// chess[n]=x表示第n行第x列有一个皇后
-	private static long placeQueenAtRow(int[] chess, int row) {
-		if (row == chess.length) {
-			return 1;
-		}
-
-		long count = 0;
-
-		if (row == 0) { // First queen
-			// 棋盘对称，只需计算一半
-			for (int i = 0; i < (chess.length + 1) / 2; i++) {
-				chess[row] = i;
-				long result = placeQueenAtRow(chess, row + 1);
-				if (chess.length % 2 == 1 && i == chess.length / 2) {
-					count += result;
-				} else {
-					count += 2 * result;
-				}
-			}
-		} else {
-			for (int i = 0; i < chess.length; i++) {
-				if (isSafe(chess, row, i)) {
-					chess[row] = i;
-					count += placeQueenAtRow(chess, row + 1);
-				}
-			}
-		}
-
-		return count;
-	}
-
-
-	private static boolean isSafe(int[] chess, int row, int col) {
-		for (int i = 0; i < row; i++) {
-			if (chess[i] == col || chess[i] == col - row + i || chess[i] == col + row - i) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-
 	private static class NQThread implements Callable<Long> {
-		private int[] chess;
+		private int[] board;
 
-		NQThread(int[] chess) {
-			this.chess = chess;
+		NQThread(int[] board) {
+			this.board = board;
 		}
 
 		@Override
 		public Long call() {
-			return NQueens.placeQueenAtRow(chess, 1);
+			return NQueens.placeQueenInRow(board, 1);
 		}
 	}
 
 
-	private static void testAllSolutions(int num) {
-		System.out.println(num + " Queens Compare");
+	private static void testAllApproaches(int n) {
+		System.out.println(n + " Queens Compare");
 		System.out.println("---------------------------------");
 
 		for (int i = 0; i < 1; i++) {
 			long begin = System.currentTimeMillis();
 
-			long count = getAllSolutionsWithBitOp(num);
+			long count = countSolutionsWithBitOp(n);
 
 			long then = System.currentTimeMillis();
 
@@ -213,16 +211,16 @@ public class NQueens {
 	}
 
 
-	private static void testOneSolutions(int min, int max) {
-		for (int num = min; num <= max; num++) {
+	private static void testOneApproach(int min, int max) {
+		for (int n = min; n <= max; n++) {
 			long then = System.currentTimeMillis();
 
-			long count = getAllSolutionsWithoutRecursion(num);
+			long count = countSolutions(n);
 
 			long now = System.currentTimeMillis();
 
 			System.out.format("%2d Queens, Time: %5dms, Solutions: %7d\n",
-				num, now - then, count);
+				n, now - then, count);
 		}
 	}
 }
@@ -230,29 +228,33 @@ public class NQueens {
 
 
 /*
-1       1
-2       0
-3       0
-4       2
-5       10
-6       4
-7       40
-8       92
-9       352
-10      724
-11      2680
-12      14200
-13      73712
-14      365596
-15      2279184
-16      14772512
-17      95815104
-18      666090624
-19      4968057848
-20      39029188884
-21      314666222712
-22      2691008701644
-23      24233937684440
-24      227514171973736
-25      2207893435808352
+https://oeis.org/A000170/list
+n 		a(n)
+1		1
+2		0
+3		0
+4		2
+5		10
+6		4
+7		40
+8		92
+9		352
+10		724
+11		2680
+12		14200
+13		73712
+14		365596
+15		2279184
+16		14772512
+17		95815104
+18		666090624
+19		4968057848
+20		39029188884
+21		314666222712
+22		2691008701644
+23		24233937684440
+24		227514171973736
+25		2207893435808352
+26		22317699616364044
+27		234907967154122528
  */
