@@ -9,12 +9,17 @@ public class NQueens {
 	private static BigInteger maskBigInteger;
 
 	public static void main(String[] args) {
-		BigInteger tmp = BigInteger.valueOf(1);
-		System.out.println(tmp);
-		System.out.println(BigInteger.ONE.not().and(BigInteger.valueOf(255)));
+		int[] test = {1, 3, 5, 7, 9, 0, 2, 4, 6, 8};
+
+		for (int i = 0; i < 10; i++) {
+			int board[] = getExplicitSolution(i);
+			System.out.println(CheckSolutionIfValid(board));
+			System.out.println(Arrays.toString(board));
+			printSolution(board);
+		}
 
 		testAllApproaches(8);
-		testOneApproach(8, 14);
+		testOneApproach(8, 13);
 	}
 
 
@@ -29,22 +34,22 @@ public class NQueens {
 			return 1;
 		}
 
-		long sum = 0;
+		long count = 0;
 		long pos = ~(row | ld | rd) & mask;
 		while (pos != 0) {
-			long p = pos & -pos;
-			pos = pos & ~p;
-			sum += checkBits(row | p, (ld | p) << 1, (rd | p) >>> 1);
+			long bit = pos & -pos;
+			pos = pos & ~bit;
+			count += checkBits(row | bit, (ld | bit) << 1, (rd | bit) >>> 1);
 		}
 
-		return sum;
+		return count;
 	}
 
 
 	public static long countSolutionsWithBigInteger(int n) {
 		maskBigInteger = BigInteger.ONE.shiftLeft(n).subtract(BigInteger.ONE);
 
-		return checkBigInteger(BigInteger.valueOf(0), BigInteger.valueOf(0), BigInteger.valueOf(0));
+		return checkBigInteger(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO);
 	}
 
 
@@ -53,16 +58,16 @@ public class NQueens {
 			return 1;
 		}
 
-		long sum = 0;
+		long count = 0;
 
 		BigInteger pos = row.or(ld).or(rd).not().and(maskBigInteger);
 		while (!pos.equals(BigInteger.ZERO)) {
-			BigInteger p = pos.and(pos.negate());
-			pos = pos.and(p.not());
-			sum += checkBigInteger(row.or(p), ld.or(p).shiftLeft(1), rd.or(p).shiftRight(1));
+			BigInteger bit = pos.and(pos.negate());
+			pos = pos.and(bit.not());
+			count += checkBigInteger(row.or(bit), ld.or(bit).shiftLeft(1), rd.or(bit).shiftRight(1));
 		}
 
-		return sum;
+		return count;
 	}
 
 
@@ -123,7 +128,7 @@ public class NQueens {
 		int col = 0;
 
 		while (true) {
-			while (row < n && col < n){
+			while (row < n && col < n) {
 				if (isSafe(board, row, col)) {
 					board[row++] = col;
 					col = 0;
@@ -189,6 +194,95 @@ public class NQueens {
 		public Long call() {
 			return NQueens.placeQueenInRow(board, 1);
 		}
+	}
+
+
+	// explicit solutions exist for all n ≥ 4
+	public static int[] getExplicitSolution(int n) {
+		if (n == 1) {
+			return new int[]{0};
+		} else if (n < 4) {
+			return null;
+		}
+
+		int[] board = new int[n];
+		int even = (n % 2 == 0) ? n : n - 1;
+
+		if ((even - 2) % 6 != 0) {
+			for (int i = 0; i < even / 2; i++) {
+				board[i] = 2 * i + 1;
+				board[even / 2 + i] = 2 * i;
+			}
+		} else if (even % 6 != 0) {
+			for (int i = 0; i < even / 2; i++) {
+				board[i] = (2 * i + even / 2 - 1) % even;
+				board[even - i - 1] = even - (2 * i + even / 2 - 1) % even - 1;
+			}
+		}
+
+		if (even != n) {
+			board[n - 1] = n - 1;
+		}
+
+		return board;
+	}
+
+
+	public static int[] FindSolution() {
+
+		return null;
+	}
+
+
+	public static boolean CheckSolutionIfValid(int[] board) {
+		if (board == null) {
+			return false;
+		}
+
+		int n = board.length;
+		BigInteger mask = BigInteger.ONE.shiftLeft(n).subtract(BigInteger.ONE);
+		BigInteger row = BigInteger.ZERO;
+		BigInteger ld = BigInteger.ZERO;
+		BigInteger rd = BigInteger.ZERO;
+
+		for (int i = 0; i < n; i++) {
+			BigInteger pos = row.or(ld).or(rd).not().and(mask);
+
+			if (pos.testBit(board[i])) {
+				row = row.setBit(board[i]);
+				ld = ld.setBit(board[i]).shiftLeft(1);
+				rd = rd.setBit(board[i]).shiftRight(1);
+			} else {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+
+	public static void printSolution(int[] board) {
+		if (board == null) {
+			return;
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		for (int i = 0; i < board.length; i++) {
+			for (int j = 0; j < board.length; j++) {
+				if (j == board[i]) {
+					sb.append("O ");
+				} else {
+					sb.append("* ");
+				}
+			}
+
+			sb.append(" (");
+			sb.append(board[i]);
+			sb.append(")\n");
+		}
+
+		System.out.println(sb);
 	}
 
 
