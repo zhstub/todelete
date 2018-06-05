@@ -29,6 +29,7 @@ public class NQueens {
 		return checkBits(0, 0, 0);
 	}
 
+
 	private static long checkBits(long row, long ld, long rd) {
 		if (row == mask) {
 			return 1;
